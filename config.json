@@ -1,0 +1,8 @@
+{
+    "fastq_dir": "data/FASTQ",
+    "output_dir": "data/output",
+    "rounds": [1, 5, 7, 8],
+    "read": "R1",
+    "lane": "001",
+    "progress_every": 1000000
+  }

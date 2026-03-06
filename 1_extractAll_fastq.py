@@ -14,25 +14,22 @@
 
 import gzip
 import os
+import json
 
-#-------------------------------------------------------------------------------------
-# CONFIG
-#-------------------------------------------------------------------------------------
-FASTQ_DIR = "data/FASTQ"
-OUTPUT_DIR = "data/output"
-ROUNDS = [1, 5, 7, 8]
-READ = "R1"                    # which read has the construct (R1 or R2)
-LANE = "001"                   # lane number in filename
-PROGRESS_EVERY = 1_000_000     # print progress every N reads (set to 0 to disable)
+# Load config from config.json (same folder as this script)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_config_path = os.path.join(_script_dir, "config.json")
+with open(_config_path) as f:
+    cfg = json.load(f)
 
-#-------------------------------------------------------------------------------------
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(cfg["output_dir"], exist_ok=True)
+progress_every = cfg.get("progress_every", 0)
 
-for round_num in ROUNDS:
-    fastq_name = f"{round_num}_{READ}_{LANE}.fastq.gz"
-    fastq_path = os.path.join(FASTQ_DIR, fastq_name)
-    out_path = os.path.join(OUTPUT_DIR, f"round{round_num}_DNA.txt")
+for round_num in cfg["rounds"]:
+    fastq_name = f"{round_num}_{cfg['read']}_{cfg['lane']}.fastq.gz"
+    fastq_path = os.path.join(cfg["fastq_dir"], fastq_name)
+    out_path = os.path.join(cfg["output_dir"], f"round{round_num}_DNA.txt")
 
     if not os.path.isfile(fastq_path):
         print(f"Skip round {round_num}: not found {fastq_path}")
@@ -51,7 +48,7 @@ for round_num in ROUNDS:
             if i % 4 == 0:
                 outfile.write(line.strip() + "\n")
                 n_reads += 1
-                if PROGRESS_EVERY and n_reads % PROGRESS_EVERY == 0:
+                if progress_every and n_reads % progress_every == 0:
                     print(f"  round {round_num}: {n_reads} reads")
 
     print(f"  round {round_num}: done, {n_reads} reads written to {out_path}")
