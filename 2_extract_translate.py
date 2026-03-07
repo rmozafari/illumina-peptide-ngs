@@ -74,6 +74,8 @@ for round_num in ROUNDS:
                 print(f"  round {round_num}: {n_reads} reads, {n_valid} valid")
             dna, pep = find_and_translate(line)
             if dna is not None:
+                if "*" in pep:
+                    continue   # skip stop-codon (truncated) peptides
                 outfile.write(f"{dna}\t{pep}\n")
                 n_valid += 1
 

@@ -1,6 +1,6 @@
 # Illumina NGS Pipeline — mRNA-Display Peptide Selection
 
-Pipeline for analyzing next-generation sequencing (NGS) data from an mRNA-display peptide selection (rounds 1, 5, 7, 8). Extracts sequences from FASTQ, finds the library motif, translates to peptide, counts and merges across rounds, and produces figures and a showcase report.
+Pipeline for analyzing next-generation sequencing (NGS) data from an mRNA-display peptide selection (rounds 1, 5, 7, 8). Extracts sequences from FASTQ, finds the library motif, translates to peptide (excluding stop-codon sequences), counts and merges across rounds, exports top N peptides to CSV, and produces figures and a showcase report.
 
 ## Library design
 
@@ -31,6 +31,7 @@ Edit **`config.json`** in the project root:
 | `variable_nt` | Variable region length in nt (30) |
 | `motif_total` | Total motif length in nt (39) |
 | `progress_every` | Print progress every N reads (0 = off) |
+| `top_n_peptides` | Number of top peptides to export (e.g. 100 or 1000) |
 
 **Expected FASTQ names:** `{round}_R1_001.fastq.gz` (e.g. `1_R1_001.fastq.gz`) inside `fastq_dir`.
 
@@ -46,6 +47,7 @@ Illumina_Scripts/
 ├── 3_count_peptides.py
 ├── 4_merge_rounds.py
 ├── 5_report.py
+├── 6_export_top_peptides.py
 ├── build_showcase_report.py
 ├── run_pipeline.sh       # run all steps (macOS/Linux)
 ├── run_pipeline.bat     # run all steps (Windows)
@@ -63,7 +65,8 @@ Illumina_Scripts/
 | 2 | `2_extract_translate.py` | `round{N}_DNA.txt` | `round{N}_translated.txt` |
 | 3 | `3_count_peptides.py` | `round{N}_translated.txt` | `round{N}_counts.csv` |
 | 4 | `4_merge_rounds.py` | `round{N}_counts.csv` | `merged_counts.csv`, `QC_summary.txt` |
-| 5 | `5_report.py` | QC_summary, round1_counts, merged_counts | `report_figures.pdf`, `report_figures.png`, `report_top20.csv` |
+| 5 | `6_export_top_peptides.py` | merged_counts.csv | `top{N}_peptides.csv` (N from config) |
+| 6 | `5_report.py` | QC_summary, round1_counts, merged_counts | `report_figures.pdf`, `report_figures.png`, `report_top20.csv` |
 | — | `build_showcase_report.py` | report_figures.png, report_top20.csv | `Showcase_Report.pdf` |
 
 **Example (from project root):**
@@ -73,6 +76,7 @@ python 1_extract_fastq.py
 python 2_extract_translate.py
 python 3_count_peptides.py
 python 4_merge_rounds.py
+python 6_export_top_peptides.py
 python 5_report.py
 python build_showcase_report.py
 ```
@@ -86,6 +90,7 @@ python build_showcase_report.py
 
 - **`QC_summary.txt`** — Total reads and unique sequences per round.
 - **`merged_counts.csv`** — One row per unique sequence; columns for count/freq per round and enrichment (e.g. R8 vs R1).
+- **`top{N}_peptides.csv`** — Top N peptides by final-round count (e.g. R8), with counts and frequencies per round, enrichment, and rank. N is set by `top_n_peptides` in config (e.g. 100 or 1000). Stop-codon peptides are excluded.
 - **`report_figures.pdf` / `report_figures.png`** — Three panels: reads per round, top 20 by count (R1), top 20 by enrichment (R8 vs R1).
 - **`report_top20.csv`** — Full peptide sequences and metrics for the two top-20 lists (count R1 and enrichment R8 vs R1).
 - **`Showcase_Report.pdf`** — Single report for sharing: figures, short interpretation, and top-20 table (full sequences). Use this for collaborators.
