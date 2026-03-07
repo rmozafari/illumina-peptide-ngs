@@ -4,5 +4,10 @@
 data/
 output/
 data/output/
+QC_summary.txt
+merged_counts.csv
+*_counts.csv
+*_translated.txt
+*_DNA.txt
 __pycache__/
 .DS_Store
