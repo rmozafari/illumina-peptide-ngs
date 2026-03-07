@@ -1,69 +1,80 @@
-nameof_inputfile="KdEqIll_DNA_Length.txt"
-nameof_outputfile="KdEqIll_TLN_TR.txt"
-forward_primer="AAGGCCGGCGGAGGT"
-reverse_primer="GGCTCAGGTAGCGGAATT"
+#-----------------------------------------------------------------------------
+# 2_extract_translate.py
+#-----------------------------------------------------------------------------
+# Author:  reza.mozafari
+# Date:    2025-03-06
+#
+# Summary: Reads DNA-per-line files from Script 1, finds motif ATGTGC + 30 nt + TGC,
+#          extracts 39 nt, translates to 13 aa (M C X10 C). Writes per-round
+#          translated tables for Script 3.
+#-----------------------------------------------------------------------------
+# Input:   data/output/round{N}_DNA.txt (from 1_extract_fastq.py)
+# Output:  data/output/round{N}_translated.txt (dna_seq, peptide; one line per read)
+#-----------------------------------------------------------------------------
 
-#------------------------------------------------------------
+import os
+import json
 from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna #These two are necessary for operations like translation and reverse complement. 
 
-inputfile=open(nameof_inputfile)
-outputfile=open(nameof_outputfile, "w")
-library_composition = {}
+# Load config
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(_script_dir, "config.json")) as f:
+    cfg = json.load(f)
 
-total_seq_num=0 #just to know how many sequences existed
-translatable_seq_num=0 #and how many of them are translatable
-
-for line in inputfile: 
-    seq_is_correct=0 #I restart this variable everytime in the loop, since later, i will use it to figure out if the 5' primer is in the sequence or not
-    total_seq_num +=1
-    if total_seq_num%10000000==0:
-        print(total_seq_num)
-        print('\n')
-        print(translatable_seq_num)
-        print('\n')
-        print('\n')
-
-        
-    if line[len(line)-1:len(line)]=='\n':#for some unknown reason, sometimes line has a \n on it, which needs to be removed
-        line = line[0:len(line)-1]
-
-    #read_dnaseq=Seq(line, generic_dna) #necessary so that sequence can be translated by Biopython (now sequence is not just a string, but a sequence class that is recognized by biopython)
-    #read_dnaseq_revcomp=read_dnaseq.reverse_complement() #takes reverse complement of readstart_read=line.find("(")+1+startingresidue
-    #read_dnaseq_revcomp_str=str(read_dnaseq_revcomp)#I make it into a string so I can search it
-    #primer_read=read_dnaseq_revcomp_str.find(forward_primer) #basically I look upstream of ATG, and find things that have the right primers
-
-    #if primer_read>0:#If the primers are in the right place
-    #new_frame=read_dnaseq_revcomp_str[primer_read:len(read_dnaseq_revcomp_str)]
-    #seq_is_correct=1
-    #else:
-    primer_read=line.find(forward_primer)
-    if primer_read>0:
-        new_frame=line[primer_read:len(line)]
-        seq_is_correct=1
-
-            
-    if seq_is_correct==1:
-        start_read=new_frame.find("GGT")+3
-        end_read=new_frame.find(reverse_primer)
-        if end_read==-1:
-            end_read=start_read-9
-        if end_read-start_read == 27:
-            read=new_frame[start_read:end_read]
-            read_dnaseq=Seq(read, generic_dna)
-            read_aaseq=read_dnaseq.translate() 
-            outputfile.write(str(read_aaseq))
-            outputfile.write("\n")
-            translatable_seq_num +=1
-            
-##            if end_read in library_composition.keys():
-##                library_composition[end_read]=library_composition[end_read]+1
-##            else:
-##                library_composition[end_read]=1    
-
-        
+OUTPUT_DIR = cfg["output_dir"]
+ROUNDS = cfg["rounds"]
+MOTIF_LEFT = cfg["motif_left"]
+MOTIF_RIGHT = cfg["motif_right"]
+VARIABLE_NT = cfg["variable_nt"]
+MOTIF_TOTAL = cfg["motif_total"]
+PROGRESS_EVERY = cfg.get("progress_every", 0)
 
 
-outputfile.close()
-print(total_seq_num)
-print(translatable_seq_num)
+def find_and_translate(line, try_rc=True):
+    """
+    Find ATGTGC + 30 nt + TGC in line (or its reverse complement).
+    Returns (dna_39nt, peptide) or (None, None) if not found.
+    Peptide may contain '*' (stop) from NNK design.
+    """
+    line = line.strip().upper()
+    if not line:
+        return None, None
+
+    for seq in [line, str(Seq(line).reverse_complement())] if try_rc else [line]:
+        pos = seq.find(MOTIF_LEFT)
+        while pos != -1:
+            start = pos
+            end = start + MOTIF_TOTAL
+            if end <= len(seq) and seq[end - len(MOTIF_RIGHT):end] == MOTIF_RIGHT:
+                dna = seq[start:end]
+                if len(dna) == MOTIF_TOTAL:
+                    pep = str(Seq(dna).translate())
+                    return dna, pep
+            pos = seq.find(MOTIF_LEFT, pos + 1)
+    return None, None
+
+
+for round_num in ROUNDS:
+    dna_path = os.path.join(OUTPUT_DIR, f"round{round_num}_DNA.txt")
+    out_path = os.path.join(OUTPUT_DIR, f"round{round_num}_translated.txt")
+
+    if not os.path.isfile(dna_path):
+        print(f"Skip round {round_num}: not found {dna_path}")
+        continue
+
+    print(f"Processing round {round_num}: {dna_path} -> {out_path}")
+
+    n_reads = 0
+    n_valid = 0
+    with open(dna_path) as infile, open(out_path, "w") as outfile:
+        outfile.write("dna_seq\tpeptide\n")
+        for line in infile:
+            n_reads += 1
+            if PROGRESS_EVERY and n_reads % PROGRESS_EVERY == 0:
+                print(f"  round {round_num}: {n_reads} reads, {n_valid} valid")
+            dna, pep = find_and_translate(line)
+            if dna is not None:
+                outfile.write(f"{dna}\t{pep}\n")
+                n_valid += 1
+
+    print(f"  round {round_num}: done, {n_valid} / {n_reads} valid -> {out_path}")

@@ -4,5 +4,9 @@
     "rounds": [1, 5, 7, 8],
     "read": "R1",
     "lane": "001",
-    "progress_every": 1000000
+    "progress_every": 1000000,
+    "motif_left": "ATGTGC",
+    "motif_right": "TGC",
+    "variable_nt": 30,
+    "motif_total": 39
   }
