@@ -47,6 +47,8 @@ Illumina_Scripts/
 ├── 4_merge_rounds.py
 ├── 5_report.py
 ├── build_showcase_report.py
+├── run_pipeline.sh       # run all steps (macOS/Linux)
+├── run_pipeline.bat     # run all steps (Windows)
 ├── data/
 │   ├── FASTQ/          # input: {round}_R1_001.fastq.gz
 │   └── output/         # all pipeline outputs
@@ -74,6 +76,11 @@ python 4_merge_rounds.py
 python 5_report.py
 python build_showcase_report.py
 ```
+
+**Or run the full pipeline in one go:**
+
+- **macOS / Linux:** `./run_pipeline.sh` (make it executable first: `chmod +x run_pipeline.sh`)
+- **Windows:** `run_pipeline.bat`
 
 ## Main outputs
 
