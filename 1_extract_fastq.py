@@ -45,7 +45,7 @@ for round_num in cfg["rounds"]:
         n_reads = 0
         for line in infile:
             i += 1
-            if i % 4 == 0:
+            if i % 4 == 1:
                 outfile.write(line.strip() + "\n")
                 n_reads += 1
                 if progress_every and n_reads % progress_every == 0:

@@ -1,5 +1,8 @@
 *.fastq
 *.fastq.gz
 *.md5
+data/
+output/
+data/output/
 __pycache__/
 .DS_Store
