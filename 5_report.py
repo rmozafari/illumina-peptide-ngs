@@ -9,7 +9,7 @@
 #          Writes report_top20.csv with full peptide sequences for the report.
 #-----------------------------------------------------------------------------
 # Input:   data/output/QC_summary.txt, round1_counts.csv, merged_counts.csv
-# Output:  data/output/report_figures.pdf, data/output/report_top20.csv
+# Output:  data/output/report_figures.pdf, report_figures.png, report_top20.csv
 #-----------------------------------------------------------------------------
 
 import os
@@ -125,7 +125,9 @@ else:
     axes[2].set_title("Top 20 by enrichment (R8 vs R1)")
 
 plt.tight_layout()
+out_png = os.path.join(OUTPUT_DIR, "report_figures.png")
 plt.savefig(out_pdf, format="pdf", bbox_inches="tight")
+plt.savefig(out_png, format="png", bbox_inches="tight", dpi=150)
 plt.close()
 print(f"Report saved -> {out_pdf}")
 
