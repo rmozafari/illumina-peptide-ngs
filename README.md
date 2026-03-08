@@ -48,6 +48,7 @@ Illumina_Scripts/
 ├── 4_merge_rounds.py
 ├── 5_report.py
 ├── 6_export_top_peptides.py
+├── 7_conserved_positions.py
 ├── build_showcase_report.py
 ├── run_pipeline.sh       # run all steps (macOS/Linux)
 ├── run_pipeline.bat     # run all steps (Windows)
@@ -68,6 +69,7 @@ Illumina_Scripts/
 | 5 | `6_export_top_peptides.py` | merged_counts.csv | `top{N}_peptides.csv` (N from config) |
 | 6 | `5_report.py` | QC_summary, round1_counts, merged_counts | `report_figures.pdf`, `report_figures.png`, `report_top20.csv` |
 | — | `build_showcase_report.py` | report_figures.png, report_top20.csv | `Showcase_Report.pdf` |
+| (optional) | `7_conserved_positions.py` | top{N}_peptides.csv | `conserved_positions.csv`, `conserved_positions.txt` |
 
 **Example (from project root):**
 
@@ -91,6 +93,7 @@ python build_showcase_report.py
 - **`QC_summary.txt`** — Total reads and unique sequences per round.
 - **`merged_counts.csv`** — One row per unique sequence; columns for count/freq per round and enrichment (e.g. R8 vs R1).
 - **`top{N}_peptides.csv`** — Top N peptides by final-round count (e.g. R8), with counts and frequencies per round, enrichment, and rank. N is set by `top_n_peptides` in config (e.g. 100 or 1000). Stop-codon peptides are excluded.
+- **`conserved_positions.csv`** / **`conserved_positions.txt`** / **`conserved_positions.xlsx`** — Per-position residue counts across the top N peptides (10 variable positions); consensus and conserved positions (run `7_conserved_positions.py` after export). xlsx written if openpyxl is installed.
 - **`report_figures.pdf` / `report_figures.png`** — Three panels: reads per round, top 20 by count (R1), top 20 by enrichment (R8 vs R1).
 - **`report_top20.csv`** — Full peptide sequences and metrics for the two top-20 lists (count R1 and enrichment R8 vs R1).
 - **`Showcase_Report.pdf`** — Single report for sharing: figures, short interpretation, and top-20 table (full sequences). Use this for collaborators.

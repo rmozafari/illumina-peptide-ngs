@@ -2,6 +2,7 @@
 *.fastq.gz
 *.md5
 data/
+archive/
 output/
 data/output/
 QC_summary.txt
@@ -9,5 +10,7 @@ merged_counts.csv
 *_counts.csv
 *_translated.txt
 *_DNA.txt
+**/20260306_before_stop_filter/
+**/20260307_stop_filtered/
 __pycache__/
 .DS_Store

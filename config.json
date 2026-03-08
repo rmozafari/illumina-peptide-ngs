@@ -9,5 +9,5 @@
   "motif_right": "TGC",
   "variable_nt": 30,
   "motif_total": 39,
-  "top_n_peptides": 100
+  "top_n_peptides": 1000
 }
