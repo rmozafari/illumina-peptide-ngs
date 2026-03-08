@@ -3,6 +3,7 @@
 #-----------------------------------------------------------------------------
 # Reads merged_counts.csv, filters out stop-codon peptides, ranks by final-round
 # count (e.g. R8), exports top N peptides to CSV and Excel.
+# Streams the file (one pass) and keeps only top N in a heap — no full load.
 # Run after 4_merge_rounds.py.
 #-----------------------------------------------------------------------------
 # Input:   data/output/merged_counts.csv, config.json
@@ -12,6 +13,7 @@
 import os
 import json
 import csv
+import heapq
 
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(_script_dir, "config.json")) as f:
@@ -35,25 +37,32 @@ freq_cols = [f"freq_r{r}" for r in ROUNDS]
 last_round = ROUNDS[-1]
 count_last = f"count_r{last_round}"
 
-# Read all rows, skip stop-codon peptides
-rows = []
+def get_count(row, r):
+    try:
+        return int(row.get(f"count_r{r}", 0) or 0)
+    except (ValueError, TypeError):
+        return 0
+
+# Stream merged_counts.csv: keep only top N by final-round count (min-heap of size N)
+# Heap stores (count_r8, tie_breaker, row); tie_breaker avoids comparing dicts when counts equal.
+top_heap = []
+n_seen = 0
 with open(merged_path) as f:
     reader = csv.DictReader(f)
     for row in reader:
         pep = (row.get("peptide") or "").strip()
         if "*" in pep:
             continue
-        rows.append(row)
+        n_seen += 1
+        c_last = get_count(row, last_round)
+        if len(top_heap) < TOP_N:
+            heapq.heappush(top_heap, (c_last, n_seen, row))
+        elif c_last > top_heap[0][0]:
+            heapq.heapreplace(top_heap, (c_last, n_seen, row))
 
-# Sort by final-round count descending, take top N
-def get_count(r, row):
-    try:
-        return int(row.get(f"count_r{r}", 0) or 0)
-    except (ValueError, TypeError):
-        return 0
-
-rows.sort(key=lambda r: get_count(last_round, r), reverse=True)
-top = rows[:TOP_N]
+# Sort descending for output (top count first)
+top = [row for (_, _, row) in sorted(top_heap, key=lambda x: -x[0])]
+print(f"Scanned {n_seen} peptides (no stop), kept top {len(top)} by R{last_round} count.")
 
 # Output column order: peptide, R1_count, R5_count, ..., freq_R1, ..., enrichment, rank
 out_count_names = [f"R{r}_count" for r in ROUNDS]
